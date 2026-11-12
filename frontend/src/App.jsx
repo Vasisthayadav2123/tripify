@@ -54,7 +54,7 @@ export default function App() {
                 </svg>
               </div>
               <span className='text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent'>
-                AI Travel Planner
+                Tripify
               </span>
             </Link>
 

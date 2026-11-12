@@ -1,14 +1,21 @@
-import OpenAI from 'openai';
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-export async function generateItineraryJSON({ destination, budget, startDate, endDate, interests, currency }) {
-  // Check if using dummy API key
-  if (process.env.OPENAI_API_KEY === 'sk-test-dummy-openai-key-for-development-testing') {
-    console.log('🧪 Using mock OpenAI response for testing...');
-    
-    // Return mock itinerary data
-    const mockItinerary = {
+export async function generateItineraryJSON({
+  destination,
+  budget,
+  startDate,
+  endDate,
+  interests,
+  currency
+}) {
+  // Mock mode (same as before)
+  if (process.env.GEMINI_API_KEY === "test-dummy-gemini-key") {
+    console.log("🧪 Using mock Gemini response for testing...");
+
+    return {
       itinerary: [
         {
           date: startDate,
@@ -19,44 +26,25 @@ export async function generateItineraryJSON({ destination, budget, startDate, en
               description: `Start your ${budget} budget adventure in ${destination}`,
               category: "sightseeing",
               suggestedArea: "City Center"
-            },
-            {
-              time: "14:00",
-              title: "Local Cuisine Experience",
-              description: `Try authentic local food that matches your interests: ${interests.join(', ')}`,
-              category: "food",
-              suggestedArea: "Restaurant District"
-            },
-            {
-              time: "19:00",
-              title: "Evening Exploration",
-              description: `Explore the nightlife and culture of ${destination}`,
-              category: "nightlife",
-              suggestedArea: "Entertainment District"
             }
           ]
         }
       ],
-      notes: `Mock itinerary generated for ${destination}. Budget: ${budget}, Currency: ${currency || 'INR'}`
+      notes: `Mock itinerary for ${destination}. Budget: ${budget}, Currency: ${currency || "INR"}`
     };
-    
-    return mockItinerary;
   }
 
   const prompt = `
-You are a travel planner. Generate a day-by-day itinerary in strict JSON for:
+You are a travel planner. Generate a day-by-day itinerary in strict JSON.
 
 destination: ${destination}
-
 dates: ${startDate} to ${endDate}
-
 budget: ${budget}
+interests: ${interests.join(", ")}
+currency: ${currency || "INR"}
 
-interests: ${interests.join(', ')}
+Return ONLY valid JSON in this exact format:
 
-currency: ${currency || 'INR'}
-
-JSON schema:
 {
   "itinerary": [
     {
@@ -67,23 +55,23 @@ JSON schema:
           "title": "string",
           "description": "string",
           "category": "sightseeing|food|museum|outdoors|nightlife|shopping|cafe|other",
-          "suggestedArea": "string neighborhood/area"
+          "suggestedArea": "string"
         }
       ]
     }
   ],
-  "notes": "string with brief tips"
+  "notes": "string"
 }
-Respond ONLY with JSON, no extra text. No explanations. No code blocks.
+
+Do not wrap in markdown. No explanations.
 `;
 
-  const resp = await client.chat.completions.create({
-    model: "gpt-4.1-mini",
-    messages: [{ role: "user", content: prompt }],
-    temperature: 0.7
-  });
+  const result = await model.generateContent(prompt);
+  let text = result.response.text();
 
-  const text = resp.choices[0].message.content;
+  // Remove possible markdown wrapping
+  text = text.replace(/```json/g, "").replace(/```/g, "").trim();
+
   const json = JSON.parse(text);
   return json;
 }
