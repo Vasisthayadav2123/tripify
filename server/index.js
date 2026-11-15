@@ -7,7 +7,12 @@ import authRoutes from './src/routes/auth.js';
 import tripRoutes from './src/routes/trips.js';
 
 const app = express();
-app.use(cors({ origin: process.env.CLIENT_URL, credentials: true }));
+// CLIENT_URL may be a comma-separated list, e.g. "http://localhost:5173,https://tripify.vercel.app"
+const allowedOrigins = (process.env.CLIENT_URL || '')
+  .split(',')
+  .map(o => o.trim().replace(/\/$/, ''))
+  .filter(Boolean);
+app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(express.json());
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
