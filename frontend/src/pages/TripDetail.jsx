@@ -31,8 +31,22 @@ export default function TripDetail() {
     }
   }
 
-  function pdf() {
-    window.open(`${import.meta.env.VITE_API_BASE}/trips/${id}/pdf`, '_blank');
+  async function pdf() {
+    // The PDF route requires the auth header, which window.open can't send,
+    // so fetch it through the api client and download the blob.
+    try {
+      const { data } = await api.get(`/trips/${id}/pdf`, { responseType: 'blob' });
+      const url = URL.createObjectURL(data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `tripify-${(trip?.destination || 'trip').replace(/\s+/g, '-')}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch {
+      alert('Failed to download PDF');
+    }
   }
 
   async function copyShareLink() {
